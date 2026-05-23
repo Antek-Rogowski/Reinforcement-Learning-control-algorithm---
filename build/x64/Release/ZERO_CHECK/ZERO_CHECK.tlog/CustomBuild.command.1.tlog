@@ -1,0 +1,10 @@
+^C:\USERS\ANTON\ONEDRIVE\DESKTOP\PYBIND\BUILD\CMAKEFILES\242BBA68501E58E0D04FCF3D1F1013DB\GENERATE.STAMP.RULE
+setlocal
+C:\Users\anton\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\cmake\data\bin\cmake.exe -SC:/Users/anton/OneDrive/Desktop/Pybind -BC:/Users/anton/OneDrive/Desktop/Pybind/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/anton/OneDrive/Desktop/Pybind/build/TankSimulatorRL.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,3 @@
+C:/Users/anton/OneDrive/Desktop/Pybind/build/CMakeFiles/tank_sim.dir
+C:/Users/anton/OneDrive/Desktop/Pybind/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/anton/OneDrive/Desktop/Pybind/build/CMakeFiles/ZERO_CHECK.dir

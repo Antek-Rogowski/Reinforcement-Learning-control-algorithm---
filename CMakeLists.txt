@@ -1,13 +1,15 @@
 cmake_minimum_required(VERSION 3.12...3.27)
 project(TankSimulatorRL)
 
-# Szukamy pakietu pybind11. 
-# Zadbaj, by mieć go zainstalowanego w swoim środowisku: pip install pybind11
+set(pybind11_DIR "C:/Users/anton/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages/pybind11/share/cmake/pybind11")
+
 find_package(pybind11 REQUIRED)
 
-# Tworzymy moduł rozszerzenia Pythona.
-# "tank_sim" to nazwa modułu, która MUSI zgadzać się z tą z makra PYBIND11_MODULE w C++.
 pybind11_add_module(tank_sim tanks.cpp)
 
-# Opcjonalnie: flaga agresywnej optymalizacji, żeby pokazać pełną moc C++
-target_compile_options(tank_sim PRIVATE -O3 -ffast-math)
+# Bezpieczne i wydajne przypisanie flag kompilacji dla MSVC (Windows) oraz GCC/Clang
+if(MSVC)
+    target_compile_options(tank_sim PRIVATE /O2 /fp:fast)
+else()
+    target_compile_options(tank_sim PRIVATE -O3 -ffast-math)
+endif()

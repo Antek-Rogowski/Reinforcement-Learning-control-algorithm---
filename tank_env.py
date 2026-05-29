@@ -3,7 +3,7 @@ from gymnasium import spaces
 import numpy as np
 from stable_baselines3 import PPO
 
-# Importujemy nasz błyskawiczny moduł skompilowany w C++!
+# Importujemy nasz błyskawiczny moduł skompilowany w C++
 import tank_sim 
 
 class ThreeTankEnv(gym.Env):
@@ -15,67 +15,69 @@ class ThreeTankEnv(gym.Env):
         
         self.sim = tank_sim.ThreeTankSystem(delta_t=0.01)
         
-        # Nowe parametry regulacji
-        self.target_h3 = 0.25      # Realistyczna wartość zadana
-        self.max_h = 1.0       
-        self.max_steps = 4000      # Wydłużony czas symulacji (400 sekund)
+        self.target_h3 = 0.25
+        self.prev_action = 0.0
+        self.max_h = 1.0      
+        self.max_steps = 4000 
         self.current_step = 0
-        self.prev_action = 0.0     # Pamięć poprzedniego wysterowania
         
-        # Przestrzeń akcji: ciągły przepływ na wejściu [m^3/s]
+        # Symetryczna przestrzeń akcji znormalizowana dla PPO [-1.0, 1.0]
         self.action_space = spaces.Box(
-            low=0.0, 
-            high=0.001, 
+            low=-1.0, 
+            high=1.0, 
             shape=(1,), 
             dtype=np.float32
         )
         
-        # Przestrzeń obserwacji: poziomy w 3 zbiornikach [m]
+        # Obserwacja rozszerzona o target_h3: [h1, h2, h3, target]
         self.observation_space = spaces.Box(
             low=0.0, 
             high=self.max_h, 
-            shape=(3,), 
+            shape=(5,), 
             dtype=np.float32
         )
+
+    def _get_obs(self):
+        """Metoda pomocnicza tworząca wektor obserwacji."""
+        state = self.sim.get_state()
+        return np.array([state[0], state[1], state[2], self.target_h3], dtype=np.float32)
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         self.sim.reset()
         self.current_step = 0
-        self.prev_action = 0.0     # Resetujemy pamięć zaworu na starcie
+        self.prev_action = 0.0
         
-        obs = np.array(self.sim.get_state(), dtype=np.float32)
-        return obs, {}
+        return self._get_obs(), {}
 
     def step(self, action):
         self.current_step += 1
         
-        # Pobieramy akcję od agenta
-        q_in = float(action[0])
+        # Przeskalowanie decyzji modelu ([-1, 1]) na przepływ zaworu ([0.0, 0.001])
+        q_in = 0.0005 * (float(action[0]) + 1.0)
         
-        # Obliczamy znormalizowaną zmianę wysterowania (względem max przepływu 0.001)
-        # Dzięki temu kara działa w skali całego zakresu zaworu (0-100%)
-        norm_delta_action = (q_in - self.prev_action) / 0.001
+        # Wyliczenie różnicy stymulacji względem poprzedniego kroku (naprawiony błąd zmiennej)
+        delta_action = q_in - self.prev_action
         self.prev_action = q_in
         
-        # Krok symulacji C++
-        next_state = self.sim.step(q_in, steps_per_action=10)
-        obs = np.array(next_state, dtype=np.float32)
+        # Krok symulacji w C++
+        self.sim.step(q_in, steps_per_action=10)
         
+        # Pobranie stanu
+        obs = self._get_obs()
         h3 = obs[2]
         
-        # Nowa funkcja nagrody: MSE (uchyb) + Kara za wariowanie zaworem
+        # Obliczenie nagrody. Normalizujemy delte akcji, aby nie zniknęła przy liczeniu małych kwadratów
         error = self.target_h3 - h3
-        reward = -float(error ** 2) - 0.001 * float(norm_delta_action ** 2)
+        reward = -float(error ** 2) - 0.5 * float((delta_action / 0.001) ** 2)
         
+        # Usunięto wczesną terminację po przelaniu. Pozwalamy fizyce na działanie (patrz tanks.cpp), 
+        # a model karany jest po prostu za nieutrzymywanie zadanego punktu.
         terminated = False
-        if np.any(obs > self.max_h):
-            reward -= 50.0
-            terminated = True
-            
         truncated = bool(self.current_step >= self.max_steps)
         
         return obs, reward, terminated, truncated, {}
+
 
 if __name__ == "__main__":
     print("Inicjalizacja środowiska...")

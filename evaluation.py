@@ -28,7 +28,10 @@ def evaluate_and_plot():
         h1_hist.append(obs[0])
         h2_hist.append(obs[1])
         h3_hist.append(obs[2])
-        action_hist.append(action[0])
+        
+        # Przeliczamy znormalizowaną akcję z powrotem na fizyczny przepływ na potrzeby wykresu
+        q_in = 0.0005 * (float(action[0]) + 1.0)
+        action_hist.append(q_in)
         
         done = terminated or truncated
 
@@ -41,7 +44,6 @@ def evaluate_and_plot():
     ax1.plot(time_axis, h2_hist, label='Zbiornik 2 (h2)', linestyle='-.')
     ax1.plot(time_axis, h3_hist, label='Zbiornik 3 (h3) - Wyjście', linewidth=2)
     
-
     target = env.target_h3
     ax1.axhline(y=target, color='r', linestyle=':', label=f'Wartość zadana ({target} m)')
     
@@ -50,7 +52,7 @@ def evaluate_and_plot():
     ax1.legend(loc='upper right')
     ax1.grid(True)
     
-    ax2.step(time_axis, action_hist, label='Przepływ wejściowy (Akcja)', color='purple')
+    ax2.step(time_axis, action_hist, label='Przepływ wejściowy', color='purple')
     ax2.set_xlabel('Czas symulacji [s]')
     ax2.set_ylabel('Przepływ [m³/s]')
     ax2.legend(loc='upper right')

@@ -13,6 +13,7 @@ private:
     const double a2 = 0.00005;    // Przekroj zaworu 2-3
     const double a3 = 0.00005;    // Przekroj zaworu odplywowego
     const double g = 9.81;        // Przyspieszenie ziemskie
+    const double max_h = 1.0;     // Maksymalna wysokosc zbiornika [m]
 
     // Stan ukladu: poziomy w zbiornikach [h1, h2, h3]
     std::vector<double> state;
@@ -53,8 +54,7 @@ public:
 
     // Wykonanie N krokow calkowania RK4 dla jednej akcji agenta
     std::vector<double> step(double action_q_in, int steps_per_action = 10) {
-        // ZWOLNIENIE GIL - kluczowy moment dla wydajnosci Pybind11!
-        // Z tym Pythonowy watek moze robic co chce, a C++ obciaza CPU.
+        // ZWOLNIENIE GIL
         py::gil_scoped_release release;
 
         for (int i = 0; i < steps_per_action; ++i) {
@@ -71,12 +71,15 @@ public:
 
             for (int j = 0; j < 3; ++j) {
                 state[j] += (dt / 6.0) * (k1[j] + 2*k2[j] + 2*k3[j] + k4[j]);
+                
                 // Zabezpieczenie przed ujemnym poziomem wody
                 if (state[j] < 0.0) state[j] = 0.0;
+                
+                // Zabezpieczenie przed przelaniem - fizyczny limit poziomu w zbiorniku
+                if (state[j] > max_h) state[j] = max_h;
             }
         }
 
-        // GIL zostaje automatycznie odzyskany po wyjsciu ze scope'a metody
         return state;
     }
 };

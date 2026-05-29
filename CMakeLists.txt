@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.12...3.27)
-project(TankSimulatorRL)
+project(Pybind)
 
-set(pybind11_DIR "C:/Users/anton/AppData/Local/Packages/PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0/LocalCache/local-packages/Python311/site-packages/pybind11/share/cmake/pybind11")
+# Najpierw znajdujemy Pythona w systemie
+find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 
+# Pytamy Pythona dynamicznie o ścieżkę do modułu CMake od pybind11
+execute_process(
+    COMMAND "${Python3_EXECUTABLE}" -c "import pybind11; print(pybind11.get_cmake_dir())"
+    OUTPUT_VARIABLE pybind11_DIR
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Teraz CMake na 100% znajdzie pakiet, niezależnie od tego jak Windows namiesza w folderach
 find_package(pybind11 REQUIRED)
 
 pybind11_add_module(tank_sim tanks.cpp)
